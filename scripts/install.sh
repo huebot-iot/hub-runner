@@ -19,11 +19,6 @@ if [[ ! $SECRET_KEY =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a
   exit 1;
 fi
 
-echo "Starting $INSTALL_TYPE install..."
-
-# Clone repo if it doesn't exist locally or pull to update
-sudo git clone https://github.com/huebot-iot/hub-runner.git $INSTALL_DIR/runner 2> /dev/null || git -C install pull
-
 # Preemptively create local mosquitto volumes so we can grant permissions (persistence wont work otherwise)
 # Note: we grant permissions to port 1883 as it is used within the container
 # Note 2: If we move to spawning multiple mqtt brokers we'd need to rethink persisence so they don't 
@@ -35,9 +30,8 @@ sudo chown -R 1883:1883 $INSTALL_DIR/mosquitto
 mkdir "/home/huebot/db"
 
 # Vars that determine hub run environment
-cat <<EOT | sudo tee -a $INSTALL_DIR/config.json
+cat <<EOT | sudo tee -a $INSTALL_DIR/huebot/config.json
 {
-    "version": "0.1.0-beta",
     "status": "normal",
     "environment": "$INSTALL_TYPE",
     "mqtt_username": "$MQTT_USERNAME",
@@ -60,6 +54,9 @@ sudo apt-get install -y docker \
 
 # Set user group permissions
 sudo usermod -aG docker,netdev huebot
+
+# Make user sudoer (don't require pw for sudo commands)
+echo 'huebot ALL=(ALL:ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers.d/010_huebot-nopasswd
 
 if [ $INSTALL_TYPE = "development" ]; then
     echo "Install extra packages for development"
