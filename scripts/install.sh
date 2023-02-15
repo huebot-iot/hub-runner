@@ -144,7 +144,7 @@ MQTT_PASSWORD=${MQTT_PASSWORD}
 EOT
 
 # Install docker images and start containers so they autostart on reboot
-sudo docker-compose -f $INSTALL_DIR/runner/docker-compose.yml up -d
+sudo docker-compose -f $INSTALL_DIR/huebot/runner/docker-compose.yml up -d
 
 echo "************************ INSTALL COMPLETE ************************"
 echo ""
