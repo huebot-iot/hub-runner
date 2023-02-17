@@ -48,6 +48,7 @@ mkdir $INSTALL_DIR/huebot/db
 printf "Done.\n"
 
 printf "Setting up Mosquitto host requirements..."
+mkdir $INSTALL_DIR/mosquitto
 mkdir $INSTALL_DIR/mosquitto/data
 sudo touch $INSTALL_DIR/mosquitto/data/mosquitto.db
 mkdir $INSTALL_DIR/mosquitto/log
