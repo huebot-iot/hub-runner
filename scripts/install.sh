@@ -19,30 +19,11 @@ if [[ ! $SECRET_KEY =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a
   exit 1;
 fi
 
-# Preemptively create local mosquitto volumes so we can grant permissions (persistence wont work otherwise)
-# Note: we grant permissions to port 1883 as it is used within the container
-# Note 2: If we move to spawning multiple mqtt brokers we'd need to rethink persisence so they don't 
-# override eachother
-mkdir $INSTALL_DIR/mosquitto/data
-mkdir $INSTALL_DIR/mosquitto/log
-sudo chown -R 1883:1883 $INSTALL_DIR/mosquitto
-
-mkdir "/home/huebot/db"
-
-# Vars that determine hub run environment
-cat <<EOT | sudo tee -a $INSTALL_DIR/huebot/config.json
-{
-    "status": "normal",
-    "environment": "$INSTALL_TYPE",
-    "mqtt_username": "$MQTT_USERNAME",
-    "mqtt_password": "$MQTT_PASSWORD"
-}
-EOT
-
-# Disable interactive prompts
+printf "Disabling interactive prompts..."
 sudo sed -i "/^#\$nrconf{restart} = 'i';/ c\$nrconf{restart} = 'a';" /etc/needrestart/needrestart.conf;
+printf "Done.\n"
 
-echo "Installing required packages. This could take a while.."
+printf "Installing required packages. This could take a while..."
 sudo apt-get update && sudo apt-get -y upgrade
 
 sudo apt-get install -y docker \
@@ -51,42 +32,42 @@ sudo apt-get install -y docker \
     dnsmasq \
     jq \
     libnss-mdns # Allow '.local' access
+printf "Done.\n"
 
-# Set user group permissions
+printf "Configuring user permissioning..."
+# Add huebot user to groups
 sudo usermod -aG docker,netdev huebot
 
-# Make user sudoer (don't require pw for sudo commands)
+# Make huebot user sudoer (don't require pw for sudo commands)
 echo 'huebot ALL=(ALL:ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers.d/010_huebot-nopasswd
+printf "Done.\n"
 
-if [ $INSTALL_TYPE = "development" ]; then
-    echo "Install extra packages for development"
+printf "Create Huebot host db..."
+# Create directory for production db (huebot dir created when using install CLI)
+mkdir $INSTALL_DIR/huebot/db
+printf "Done.\n"
 
-    sudo apt-get --with-new-pkgs upgrade -y && \
-        sudo apt-get full-upgrade -y && \
-        sudo add-apt-repository ppa:deadsnakes/ppa -y && \
-        sudo apt-get update
+printf "Setting up Mosquitto host requirements..."
+mkdir $INSTALL_DIR/mosquitto/data
+sudo touch $INSTALL_DIR/mosquitto/data/mosquitto.db
+mkdir $INSTALL_DIR/mosquitto/log
+sudo touch $INSTALL_DIR/mosquitto/log/mosquitto.log
+mkdir $INSTALL_DIR/mosquitto/conf.d
+sudo touch $INSTALL_DIR/mosquitto/conf.d/huebot.conf
 
-    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash
-    
-    sudo apt-get install -yq software-properties-common \
-        nodejs \
-        sqlite3
-
-    # Set NPM global path
-    mkdir ~/.npm-global
-    npm config set prefix '~/.npm-global'
-    echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile
-    source ~/.profile
-
-    # Enable full mosquitto logging in dev mode
-    cat <<EOT > $INSTALL_DIR/mosquitto/conf.d/huebot.conf
-log_type all
+# MQTT broker credentials
+cat <<EOT | sudo tee -a $INSTALL_DIR/mosquitto/config.json
+{
+    "mqtt_username": "$MQTT_USERNAME",
+    "mqtt_password": "$MQTT_PASSWORD"
+}
 EOT
 
-fi
+# give container recursive write access to dir
+sudo chown -R 1883:1883 $INSTALL_DIR/mosquitto
+printf "Done.\n"
 
-echo "Configuring networking..." 
-
+printf "Configuring network settings..."
 # Downgrade wpa_supplicant - latest version (2.10) has NM hotspot bug
 # https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot
 cat <<EOT | sudo tee -a /etc/apt/sources.list
@@ -125,7 +106,6 @@ dhcp-range=192.168.101.2,192.168.101.250,255.255.255.0,24h
 local=/huebot/
 EOT
 
-echo "Updating hostname to API key"
 sudo hostnamectl set-hostname $API_KEY
 sudo sed -i "s/127.0.1.1\s.*/127.0.1.1 ${API_KEY}/g" /etc/hosts
 
@@ -133,8 +113,10 @@ sudo sed -i "s/127.0.1.1\s.*/127.0.1.1 ${API_KEY}/g" /etc/hosts
 cat <<EOT | sudo tee -a /etc/hosts
 $NETWORK_NODE_AP_IP hub.huebot
 EOT
+printf "Done.\n"
 
-# Set environment variables
+printf "Set environment variables..."
+# TO DO: Delete mqtt credentials once core reads from config.json
 cat <<EOT | sudo tee -a /etc/environment
 HUEBOT_API_KEY=${API_KEY}
 HUEBOT_SECRET_KEY=${SECRET_KEY}
@@ -142,9 +124,41 @@ NETWORK_NODE_AP_IP=${NETWORK_NODE_AP_IP}
 MQTT_USERNAME=${MQTT_USERNAME}
 MQTT_PASSWORD=${MQTT_PASSWORD}
 EOT
+printf "Done.\n"
 
+## INSTALL DEVELOPMENT PACKAGES
+if [ $INSTALL_TYPE = "development" ]; then
+  printf "Installing development packages..."
+
+  sudo apt-get --with-new-pkgs upgrade -y && \
+      sudo apt-get full-upgrade -y && \
+      sudo add-apt-repository ppa:deadsnakes/ppa -y && \
+      sudo apt-get update
+
+  curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash
+  
+  sudo apt-get install -yq software-properties-common \
+      nodejs \
+      sqlite3
+
+  # Set NPM global path
+  mkdir ~/.npm-global
+  npm config set prefix '~/.npm-global'
+  echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile  
+  source ~/.profile
+
+  # Enable full mosquitto logging in dev mode
+  cat <<EOT > $INSTALL_DIR/mosquitto/conf.d/huebot.conf
+log_type all
+EOT
+
+  printf "Done.\n"
+fi
+
+printf "Installing Docker containers and spinning up..."
 # Install docker images and start containers so they autostart on reboot
 sudo docker-compose -f $INSTALL_DIR/huebot/runner/docker-compose.yml up -d
+printf "Done.\n"
 
 echo "************************ INSTALL COMPLETE ************************"
 echo ""
