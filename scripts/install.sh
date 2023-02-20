@@ -11,9 +11,9 @@ MQTT_USERNAME=huebot_mqtt
 MQTT_PASSWORD=$(openssl rand -base64 10)
 
 USER_HOME=/home/huebot
-LOG_STATUS=/home/huebot/.install
-LOG_FILE=/home/huebot/upgrade.log
 INSTALL_DIR=/usr/local/bin
+LOG_STATUS=$INSTALL_DIR/huebot/.install
+LOG_FILE=$INSTALL_DIR/huebot/install.log
 
 if [ "$EUID" -ne 0 ] ; then
   printf "Must be run as root.\n"
@@ -72,12 +72,6 @@ EOF
 
 runInstall() {
 
-	foo=$(<$LOG_STATUS)
-	if [ $foo == 0 ]; then
-		printf "Huebot already installed\n"
-#		exit 1
-	fi
-
 	function error_found {
     		echo '2' > $LOG_STATUS
     		printf "\n\n"
@@ -85,8 +79,36 @@ runInstall() {
     		printf "There was an error detected during the install. Please review the log at /var/log/huebot/huebot_install.log\n"
     		exit 1
   	}
+	
+	if [ ! -f $LOG_STATUS ] ; then
+		if ! touch $LOG_STATUS ; then
+			printf "Failed: Error while trying to create %s.\n" "$LOG_STATUS"
+			error_found
+		fi
+	else 
+		INSTALL_STATUS=$(<$LOG_STATUS)
+		if [ $INSTALL_STATUS == 0 ]; then
+			printf "Huebot already installed.\n"
+			exit 1
+		fi
+	fi
 
 	echo '1' > $LOG_STATUS
+	
+	# Remove stale install log file if found
+	if [ -f $LOG_FILE ] ; then
+		if ! rm $LOG_FILE >> $LOG_FILE 2>&1 ; then
+			printf "Failed to remove %s.\n" "$LOG_FILE"
+			error_found
+		fi
+	fi
+	
+	# Create new install log file
+	
+	if ! touch $LOG_FILE >> $LOG_FILE 2>&1 ; then
+		printf "Failed to create %s.\n" "$LOG_FILE"
+		error_found
+	fi
 
 	printf "Disabling interactive prompts..."
 	if ! sed -i "/^#\$nrconf{restart} = 'i';/ c\$nrconf{restart} = 'a';" /etc/needrestart/needrestart.conf >> $LOG_FILE 2>&1; then
@@ -417,6 +439,7 @@ runInstall() {
 	printf "\n\n\n************************ INSTALL COMPLETE ************************\n\n\n"
 	printf "Rebooting device\n"
 	printf "Login using: ssh huebot@%s.local\n" "${API_KEY}"
+	printf "Install log: %s\n" "$LOG_FILE"
 	printf "\n\n******************************************************************\n\n\n"
 	
 	reboot
