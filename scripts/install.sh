@@ -317,6 +317,11 @@ runInstall() {
 			error_found
 		fi
 	fi
+	
+	if ! hostnamectl set-hostname $API_KEY >> $LOG_FILE 2>&1 ; then
+		printf "Failed: Error while running \"hostnamectl set-hostname %s\"\n" "${API_KEY}"
+		error_found
+	fi
 
 	HOST_FILE="/etc/hosts"
 	if ! grep -q "$API_KEY" "$HOST_FILE" >> $LOG_FILE 2>&1 ; then
