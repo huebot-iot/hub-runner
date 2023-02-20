@@ -38,7 +38,7 @@ EOF
 }
 
 netplan_config() {
-cat <<EOF >> /etc/netplan/netplan-config.yaml 
+cat > /etc/netplan/netplan-config.yaml <<EOF
 network:
   version: 2
   renderer: NetworkManager
@@ -46,14 +46,14 @@ EOF
 }
 
 use_dnsmasq(){
-cat <<EOF >> /etc/NetworkManager/conf.d/00-use-dnsmasq.conf
+cat > /etc/NetworkManager/conf.d/00-use-dnsmasq.conf <<EOF
 [main]
 dns=dnsmasq
 EOF
 }
 
 dnsmasq_config(){
-cat <<EOF >> /etc/NetworkManager/dnsmasq.d/00-dnsmasq-config.conf
+cat > /etc/NetworkManager/dnsmasq.d/00-dnsmasq-config.conf <<EOF
 interface=$AP_INTERFACE
 dhcp-range=192.168.101.2,192.168.101.250,255.255.255.0,24h
 local=/huebot/
