@@ -21,7 +21,7 @@ if [ "$EUID" -ne 0 ] ; then
 fi
 
 mqtt_config() {
-cat > "${INSTALL_DIR}/mosquitto/config.json" <<EOF
+cat <<EOF >> ${INSTALL_DIR}/mosquitto/config.json 
 {
 	"mqtt_username": "$MQTT_USERNAME",
 	"mqtt_password": "$MQTT_PASSWORD"
@@ -38,7 +38,7 @@ EOF
 }
 
 netplan_config() {
-cat > "/etc/netplan/netplan-config.yaml" <<EOF
+cat <<EOF >> /etc/netplan/netplan-config.yaml 
 network:
   version: 2
   renderer: NetworkManager
@@ -46,14 +46,14 @@ EOF
 }
 
 use_dnsmasq(){
-cat > "/etc/NetworkManager/conf.d/00-use-dnsmasq.conf" <<EOF
+cat <<EOF >> /etc/NetworkManager/conf.d/00-use-dnsmasq.conf
 [main]
 dns=dnsmasq
 EOF	
 }
 
 dnsmasq_config(){
-cat > "/etc/NetworkManager/dnsmasq.d/00-dnsmasq-config.conf" <<EOF
+cat <<EOF >> /etc/NetworkManager/dnsmasq.d/00-dnsmasq-config.conf
 interface=$AP_INTERFACE
 dhcp-range=192.168.101.2,192.168.101.250,255.255.255.0,24h
 local=/huebot/
