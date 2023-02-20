@@ -49,7 +49,7 @@ use_dnsmasq(){
 cat <<EOF >> /etc/NetworkManager/conf.d/00-use-dnsmasq.conf
 [main]
 dns=dnsmasq
-EOF	
+EOF
 }
 
 dnsmasq_config(){
