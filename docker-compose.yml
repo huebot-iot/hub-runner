@@ -29,16 +29,15 @@ services:
       - huebot-net
 
   api:
-    image: ghcr.io/huebot-iot/hub-core-api:0.1.5
+    image: ghcr.io/huebot-iot/hub-core-api:0.1.6
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - HUEBOT_API_KEY=$HUEBOT_API_KEY
       - HUEBOT_SECRET_KEY=$HUEBOT_SECRET_KEY
-      - MQTT_USERNAME=$MQTT_USERNAME
-      - MQTT_PASSWORD=$MQTT_PASSWORD
     volumes:
       - /usr/local/bin/huebot/db:/usr/db
+      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt.json
     ports:
       - 3000:3000
     networks:
@@ -59,12 +58,12 @@ services:
       - huebot-net
 
   mqtt:
-    image: ghcr.io/huebot-iot/hub-core-mqtt:0.1.0
+    image: ghcr.io/huebot-iot/hub-core-mqtt:0.1.1
     restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - MQTT_USERNAME=$MQTT_USERNAME
-      - MQTT_PASSWORD=$MQTT_PASSWORD
+    volumes:
+      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt.json
     networks:
       - huebot-net
 
