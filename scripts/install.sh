@@ -425,7 +425,19 @@ runInstall() {
 				error_found
 			fi
 		fi
-
+		
+		# Create development db directory
+		if [ ! -d "${USER_HOME}/db" ] ; then
+		if ! mkdir "${USER_HOME}/db" ; then
+			printf "Failed: Error while trying to create %s.\n" "${USER_HOME}/db"
+			error_found
+		fi
+		
+		if [ $(chown -R huebot:huebot "${USER_HOME}/db") ] ; then 
+			printf "Failed: Error while trying to chown %s.\n" "${USER_HOME}/db"
+			error_found
+		fi
+	fi
 	
 		printf "Done.\n"
 	fi
