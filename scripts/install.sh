@@ -61,7 +61,7 @@ EOF
 }
 
 environment_vars() {
-cat <<EOF >> /etc/environment 
+cat <<EOF >> $USER_HOME/.bashrc
 HUEBOT_API_KEY=${API_KEY}
 HUEBOT_SECRET_KEY=${SECRET_KEY}
 NETWORK_NODE_AP_IP=${NETWORK_NODE_AP_IP}
@@ -342,7 +342,7 @@ runInstall() {
 	printf "Set environment variables..."
 
 	# Note: like "old-releases" above, we will just check one value to determine if this task is done
-	if ! grep -q "$API_KEY" "/etc/environment" >> $LOG_FILE 2>&1 ; then
+	if ! grep -q "$API_KEY" "$USER_HOME/.bashrc" >> $LOG_FILE 2>&1 ; then
 		if ! environment_vars >> $LOG_FILE 2>&1 ; then
 			printf "Failed: Error when attempting to set environment variables\n"
 			error_found
