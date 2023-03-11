@@ -29,15 +29,14 @@ services:
       - huebot-net
 
   api:
-    image: ghcr.io/huebot-iot/hub-core-api:0.1.6
+    image: ghcr.io/huebot-iot/hub-core-api:0.1.7
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - HUEBOT_API_KEY=$HUEBOT_API_KEY
-      - HUEBOT_SECRET_KEY=$HUEBOT_SECRET_KEY
     volumes:
       - /usr/local/bin/huebot/db:/usr/db
-      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt.json
+      - /usr/local/bin/huebot/config.json:/usr/app/huebot-config.json
+      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt-config.json
     ports:
       - 3000:3000
     networks:
@@ -58,24 +57,25 @@ services:
       - huebot-net
 
   mqtt:
-    image: ghcr.io/huebot-iot/hub-core-mqtt:0.1.1
+    image: ghcr.io/huebot-iot/hub-core-mqtt:0.1.2
     restart: unless-stopped
     environment:
       - NODE_ENV=development
     volumes:
-      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt.json
+      - /usr/local/bin/mosquitto/config.json:/usr/app/mqtt-config.json
     networks:
       - huebot-net
 
   ble:
-    image: ghcr.io/huebot-iot/hub-ble:0.1.0
+    image: ghcr.io/huebot-iot/hub-ble:0.1.2
     restart: unless-stopped
     privileged: true
     network_mode: "host"
     environment:
-      - HUEBOT_API_KEY=$HUEBOT_API_KEY
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=INFO
+    volumes:
+      - /usr/local/bin/huebot/config.json:/usr/src/huebot-config.json
 
 networks:
   huebot-net:

@@ -20,6 +20,16 @@ if [ "$EUID" -ne 0 ] ; then
   exit 1
 fi
 
+huebot_config() {
+cat <<EOF >> ${INSTALL_DIR}/huebot/config.json 
+{
+	"api_key": "$API_KEY",
+	"secret_key": "$SECRET_KEY",
+	"node_ap_ip": "$NETWORK_NODE_AP_IP"
+}
+EOF
+}
+
 mqtt_config() {
 cat <<EOF >> ${INSTALL_DIR}/mosquitto/config.json 
 {
@@ -57,14 +67,6 @@ cat > /etc/NetworkManager/dnsmasq.d/00-dnsmasq-config.conf <<EOF
 interface=$AP_INTERFACE
 dhcp-range=192.168.101.2,192.168.101.250,255.255.255.0,24h
 local=/huebot/
-EOF
-}
-
-environment_vars() {
-cat <<EOF >> $USER_HOME/.bashrc
-HUEBOT_API_KEY=${API_KEY}
-HUEBOT_SECRET_KEY=${SECRET_KEY}
-NETWORK_NODE_AP_IP=${NETWORK_NODE_AP_IP}
 EOF
 }
 
@@ -339,12 +341,11 @@ runInstall() {
 
 	printf "Done.\n"
 
-	printf "Set environment variables..."
+	printf "Set Huebot config file..."
 
-	# Note: like "old-releases" above, we will just check one value to determine if this task is done
-	if ! grep -q "$API_KEY" "$USER_HOME/.bashrc" >> $LOG_FILE 2>&1 ; then
-		if ! environment_vars >> $LOG_FILE 2>&1 ; then
-			printf "Failed: Error when attempting to set environment variables\n"
+	if [ ! -f "${INSTALL_DIR}/huebot/config.json" ] ; then
+		if ! huebot_config >> $LOG_FILE 2>&1 ; then
+			printf "Failed: Error while trying to create %s.\n" "${INSTALL_DIR}/huebot/config.json"
 			error_found
 		fi
 	fi
