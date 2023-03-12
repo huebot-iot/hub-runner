@@ -1,8 +1,7 @@
-# Lib services required in development and production env
-# Services that cannot be updated by end user
 version: "3.9"
 services:
   redis:
+    container_name: prod_redis
     image: redis:6.2-alpine
     restart: unless-stopped
     ports:
@@ -11,11 +10,13 @@ services:
       - huebot-net
 
   nginx:
+    container_name: prod_nginx
     image: ghcr.io/huebot-iot/nginx:1.0.3
     restart: unless-stopped
     network_mode: "host"
 
   mqtt_broker:
+    container_name: prod_mqtt_broker
     image: ghcr.io/huebot-iot/mqtt:1.2.1
     restart: unless-stopped
     volumes:
@@ -29,6 +30,7 @@ services:
       - huebot-net
 
   api:
+    container_name: prod_core_api
     image: ghcr.io/huebot-iot/hub-core-api:0.1.7
     restart: unless-stopped
     environment:
@@ -43,6 +45,7 @@ services:
       - huebot-net
 
   native:
+    container_name: prod_core_native
     image: ghcr.io/huebot-iot/hub-core-native:0.1.2
     privileged: true
     restart: unless-stopped
@@ -57,6 +60,7 @@ services:
       - huebot-net
 
   mqtt:
+    container_name: prod_core_mqtt
     image: ghcr.io/huebot-iot/hub-core-mqtt:0.1.2
     restart: unless-stopped
     environment:
@@ -67,6 +71,7 @@ services:
       - huebot-net
 
   ble:
+    container_name: prod_ble
     image: ghcr.io/huebot-iot/hub-ble:0.1.2
     restart: unless-stopped
     privileged: true
